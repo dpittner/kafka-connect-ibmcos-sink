@@ -21,13 +21,17 @@ plugins {
 
 repositories {
    mavenCentral()
+    maven {
+        url "https://packages.confluent.io/maven/"
+    }
 }
 
 dependencies {
   compile 'com.eclipsesource.minimal-json:minimal-json:0.9.5'
-  compile 'com.ibm.cos:ibm-cos-java-sdk:2.4.5'
+  compile 'com.ibm.cos:ibm-cos-java-sdk:2.6.2'
   compile 'org.apache.kafka:connect-api:2.2.1'
-
+  compile 'org.apache.parquet:parquet-avro:1.11.0'
+    compile 'io.confluent:kafka-avro-serializer:5.5.0'
   testCompile 'org.mockito:mockito-all:1.10.19'
   testCompile 'junit:junit:4.12'
   testCompile 'com.squareup.okhttp3:mockwebserver:3.9.+'
