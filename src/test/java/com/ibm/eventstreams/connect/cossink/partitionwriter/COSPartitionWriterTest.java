@@ -69,12 +69,12 @@ public class COSPartitionWriterTest {
     private class MockBucket implements Bucket {
 
         private int putCount;
-        private List<byte[]> objects = new LinkedList<>();
+        private final List<byte[]> objects = new LinkedList<>();
 
         @Override
         public PutObjectResult putObject(
                 String key, InputStream input, ObjectMetadata metadata)
-                throws SdkClientException, AmazonServiceException {
+                throws SdkClientException {
             putCount++;
 
             ByteArrayOutputStream baos = new ByteArrayOutputStream();

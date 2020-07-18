@@ -77,11 +77,8 @@ public class Endpoint {
         } else if (!privateEndpoint.equals(other.privateEndpoint))
             return false;
         if (publicEndpoint == null) {
-            if (other.publicEndpoint != null)
-                return false;
-        } else if (!publicEndpoint.equals(other.publicEndpoint))
-            return false;
-        return true;
+            return other.publicEndpoint == null;
+        } else return publicEndpoint.equals(other.publicEndpoint);
     }
 
     @Override

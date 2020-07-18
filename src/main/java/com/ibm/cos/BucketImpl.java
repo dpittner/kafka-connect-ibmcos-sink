@@ -35,7 +35,7 @@ public class BucketImpl implements Bucket {
 
     @Override
     public PutObjectResult putObject(String key, InputStream input, ObjectMetadata metadata)
-            throws SdkClientException, AmazonServiceException {
+            throws SdkClientException {
         return s3.putObject(name, key, input, metadata);
     }
 

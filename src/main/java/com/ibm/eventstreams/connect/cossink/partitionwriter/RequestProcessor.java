@@ -37,7 +37,7 @@ abstract class RequestProcessor<T extends Enum<?>> {
     private final Deque<Request> requests = new LinkedList<>();
     private boolean beingProcessed = false;
     private boolean closed = false;
-    private Object monitor = new Object();
+    private final Object monitor = new Object();
 
     private final T closeValue;
 

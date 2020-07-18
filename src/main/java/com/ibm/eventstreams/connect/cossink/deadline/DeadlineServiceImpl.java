@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
 
 public class DeadlineServiceImpl implements DeadlineService {
 
-    private ScheduledExecutorService scheduledExecutor = Executors.newScheduledThreadPool(0);
+    private final ScheduledExecutorService scheduledExecutor = Executors.newScheduledThreadPool(0);
 
     @Override
     public DeadlineCanceller schedule(DeadlineListener listener, long time, TimeUnit unit, Object context) {

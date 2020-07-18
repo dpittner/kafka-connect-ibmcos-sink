@@ -19,6 +19,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.ibm.eventstreams.connect.cossink.partitionwriter.COSObjectFactory;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.config.ConfigException;
@@ -55,7 +56,7 @@ public class COSSinkTask extends SinkTask {
 
     private Bucket bucket;
     private int recordsPerObject;
-    private boolean delimitRecords;
+    private COSObjectFactory objFactory;
     private int deadlineSec;
     private int intervalSec;
 
@@ -105,7 +106,13 @@ public class COSSinkTask extends SinkTask {
         bucket = client.bucket(bucketName);
 
         recordsPerObject = connectorConfig.getInt(COSSinkConnectorConfig.CONFIG_NAME_COS_OBJECT_RECORDS);
-        delimitRecords = connectorConfig.getBoolean(COSSinkConnectorConfig.CONFIG_NAME_COS_OBJECT_RECORD_DELIMITER_NL);
+        final boolean delimitRecords = connectorConfig.getBoolean(COSSinkConnectorConfig.CONFIG_NAME_COS_OBJECT_RECORD_DELIMITER_NL);
+        final String avroSchema = connectorConfig.getString(COSSinkConnectorConfig.CONFIG_NAME_COS_OBJECT_PARQUET_SCHEMA);
+
+        if (delimitRecords && avroSchema !=null) {
+            throw new ConfigException(
+                    "RecordDelimiter can not be used together with writing Parquet");
+        }
 
         deadlineSec = connectorConfig.getInt(COSSinkConnectorConfig.CONFIG_NAME_COS_OBJECT_DEADLINE_SECONDS);
         intervalSec = connectorConfig.getInt(COSSinkConnectorConfig.CONFIG_NAME_COS_OBJECT_INTERVAL_SECONDS);
@@ -150,7 +157,7 @@ public class COSSinkTask extends SinkTask {
             if (assignedWriters.containsKey(tp)) {
                 LOG.info("A PartitionWriter already exists for {}", tp);
             } else {
-                PartitionWriter pw = pwFactory.newPartitionWriter(bucket, buildCompletionCriteriaSet(), delimitRecords);
+                PartitionWriter pw = pwFactory.newPartitionWriter(bucket, buildCompletionCriteriaSet(), objFactory);
                 assignedWriters.put(tp, pw);
             }
         }

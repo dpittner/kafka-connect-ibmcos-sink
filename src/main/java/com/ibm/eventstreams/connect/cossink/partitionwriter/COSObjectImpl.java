@@ -15,50 +15,43 @@
  */
 package com.ibm.eventstreams.connect.cossink.partitionwriter;
 
-import com.ibm.cloud.objectstorage.services.s3.model.ObjectMetadata;
-import com.ibm.cos.Bucket;
-import org.apache.avro.generic.GenericData;
-import org.apache.kafka.connect.data.Schema;
-import org.apache.kafka.connect.data.Schema.Type;
-import org.apache.kafka.connect.sink.SinkRecord;
-import org.apache.parquet.avro.AvroParquetWriter;
-import org.apache.parquet.hadoop.ParquetWriter;
-import org.apache.parquet.hadoop.metadata.CompressionCodecName;
-import org.apache.parquet.io.OutputFile;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import tech.allegro.schema.json2avro.converter.JsonAvroConverter;
-
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.LinkedList;
 import java.util.List;
 
-class COSObjectParquet implements COSObject {
-    private static final Logger LOG = LoggerFactory.getLogger(COSObjectParquet.class);
+import org.apache.kafka.connect.data.Schema;
+import org.apache.kafka.connect.data.Schema.Type;
+import org.apache.kafka.connect.sink.SinkRecord;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.ibm.cloud.objectstorage.services.s3.model.ObjectMetadata;
+import com.ibm.cos.Bucket;
+
+class COSObjectImpl implements COSObject {
+    private static final Logger LOG = LoggerFactory.getLogger(COSObjectImpl.class);
 
     private static final Charset UTF8 = StandardCharsets.UTF_8;
     private static final byte[] EMPTY = new byte[0];
 
     private final List<SinkRecord> records = new LinkedList<>();
     private Long lastOffset;
+    private final byte[] recordSeparatorBytes;
 
-    private final JsonAvroConverter converter = new JsonAvroConverter();
-    private Path tempFile;
-    private org.apache.avro.Schema avroSchema;
-
-    COSObjectParquet(String schema){
-        try {
-            tempFile = Files.createTempFile("cos-sink-", ".parqet");
-            avroSchema = new org.apache.avro.Schema.Parser().parse(schema);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+    COSObjectImpl(Boolean delimitRecords) {
+        if (delimitRecords) {
+            LOG.trace("> delimiting records within object using new line");
+            this.recordSeparatorBytes = "\n".getBytes();
+        } else {
+            this.recordSeparatorBytes = new byte[0];
         }
     }
+
     @Override
     public void put(SinkRecord record) {
         LOG.trace("> put, {}-{} offset={}", record.topic(), record.kafkaPartition(), record.kafkaOffset());
@@ -73,50 +66,38 @@ class COSObjectParquet implements COSObject {
         if (records.isEmpty()) {
             throw new IllegalStateException("Attempting to write an empty object");
         }
-        try {
-            final String key = createKey();
-            final InputStream is = createStream();
 
-            bucket.putObject(key, is, new ObjectMetadata());
-            LOG.trace("< write, key={}", key);
-        } catch (IOException e) {
-            LOG.warn("< failed to write parquet, error={}", e);
-            throw new RuntimeException(e);
-        } finally {
-            try {
-                Files.delete(tempFile);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
+        final String key = createKey();
+        final byte[] value = createStream();
+        final ByteArrayInputStream bais = new ByteArrayInputStream(value);
+        bucket.putObject(key, bais, createMetadata(key, value));
+        LOG.trace("< write, key={}", key);
     }
+
     @Override
     public Long lastOffset() {
         return lastOffset;
     }
 
-
-    String createKey() {
+    public String createKey() {
         SinkRecord firstRecord = records.get(0);
-        return String.format("topic=%s/partition=%d/offsetBegin=%016d/offsetEnd=%016d",
+        return String.format("%s/%d/%016d-%016d",
                 firstRecord.topic(), firstRecord.kafkaPartition(), firstRecord.kafkaOffset(), lastOffset);
     }
 
-    InputStream createStream() throws IOException {
-
-        OutputFile oFile = TempOutputfile.nioPathToOutputFile(tempFile);
-        ParquetWriter<GenericData.Record> parquetWriter = AvroParquetWriter
-                .<GenericData.Record>builder(oFile)
-                .withSchema(avroSchema)
-                .withCompressionCodec(CompressionCodecName.SNAPPY)
-                .build();
-
-        for(SinkRecord obj : records){
-            GenericData.Record aRecord = converter.convertToGenericDataRecord(createValue(obj), avroSchema);
-            parquetWriter.write(aRecord);
+    public byte[] createStream() {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        for (SinkRecord record : records) {
+            try {
+                baos.write(createValue(record));
+                // will not write any byte unless there is something to write
+                baos.write(recordSeparatorBytes);
+            } catch(IOException e) {
+                // Ignore, as it shouldn't be possible for a write to a ByteArrayOutputStream to
+                // raise this exception.
+            }
         }
-        parquetWriter.close();
-        return Files.newInputStream(tempFile);
+        return baos.toByteArray();
     }
 
     private static byte[] createValue(final SinkRecord record) {
@@ -141,5 +122,11 @@ class COSObjectParquet implements COSObject {
             }
         }
         return result;
+    }
+
+    private static ObjectMetadata createMetadata(final String key, final byte[] value) {
+        ObjectMetadata metadata = new ObjectMetadata();
+        metadata.setContentLength(value.length);
+        return metadata;
     }
 }
