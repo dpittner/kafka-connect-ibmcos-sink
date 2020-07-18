@@ -31,6 +31,7 @@ import tech.allegro.schema.json2avro.converter.JsonAvroConverter;
 
 import java.io.*;
 import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -77,7 +78,7 @@ class COSObjectParquet implements COSObject {
             final String key = createKey();
             final InputStream is = createStream();
 
-            bucket.putObject(key, is, new ObjectMetadata());
+            bucket.putObject(key, is, createMetadata());
             LOG.trace("< write, key={}", key);
         } catch (IOException e) {
             LOG.warn("< failed to write parquet, error={}", e);
@@ -98,7 +99,7 @@ class COSObjectParquet implements COSObject {
 
     String createKey() {
         SinkRecord firstRecord = records.get(0);
-        return String.format("topic=%s/partition=%d/offsetBegin=%016d/offsetEnd=%016d",
+        return String.format("topic=%s/partition=%d/offsetBegin=%016d/offsetEnd=%016d/kafka.snappy.parquet",
                 firstRecord.topic(), firstRecord.kafkaPartition(), firstRecord.kafkaOffset(), lastOffset);
     }
 
@@ -141,5 +142,14 @@ class COSObjectParquet implements COSObject {
             }
         }
         return result;
+    }
+
+    private ObjectMetadata createMetadata() throws IOException {
+        ObjectMetadata metadata = new ObjectMetadata();
+        FileChannel tempFileChannel = FileChannel.open(tempFile);
+
+        metadata.setContentLength(tempFileChannel.size());
+        tempFileChannel.close();
+        return metadata;
     }
 }

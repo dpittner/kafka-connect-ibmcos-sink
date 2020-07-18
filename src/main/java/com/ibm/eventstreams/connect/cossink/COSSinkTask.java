@@ -113,6 +113,7 @@ public class COSSinkTask extends SinkTask {
             throw new ConfigException(
                     "RecordDelimiter can not be used together with writing Parquet");
         }
+        objFactory = new COSObjectFactory(delimitRecords,avroSchema);
 
         deadlineSec = connectorConfig.getInt(COSSinkConnectorConfig.CONFIG_NAME_COS_OBJECT_DEADLINE_SECONDS);
         intervalSec = connectorConfig.getInt(COSSinkConnectorConfig.CONFIG_NAME_COS_OBJECT_INTERVAL_SECONDS);
