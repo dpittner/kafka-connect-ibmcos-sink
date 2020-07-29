@@ -74,6 +74,12 @@ public class COSSinkConnectorConfig extends AbstractConfig {
             "Delimit records with new lines within a single object storage object.";
     private static final String CONFIG_DISPLAY_COS_OBJECT_RECORD_DELIMITER_NL = "Delimit records with new line";
 
+    static final String CONFIG_NAME_COS_OBJECT_PARQUET_SCHEMA = "cos.object.parquet.schema";
+    private static final String CONFIG_DOCUMENTATION_COS_OBJECT_PARQUET_SCHEMA =
+            "Avro schema that should be used to parse JSON into parquet.";
+    private static final String CONFIG_DISPLAY_COS_OBJECT_PARQUET_SCHEMA = "Parse JSON according to scheme and produce parquet";
+
+
     static final String CONFIG_NAME_COS_OBJECT_DEADLINE_SECONDS = "cos.object.deadline.seconds";
     private static final String CONFIG_DOCUMENTATION_COS_OBJECT_DEADLINE_SECONDS =
             "The maximum period of (wall clock) time between the connector receiving a Kafka record and the " +
@@ -130,6 +136,10 @@ public class COSSinkConnectorConfig extends AbstractConfig {
         .define(CONFIG_NAME_COS_OBJECT_RECORD_DELIMITER_NL, Type.BOOLEAN, false, Importance.MEDIUM,
                 CONFIG_DOCUMENTATION_COS_OBJECT_RECORD_DELIMITER_NL, CONFIG_GROUP_COS, 8, Width.MEDIUM,
                 CONFIG_DISPLAY_COS_OBJECT_RECORD_DELIMITER_NL)
+
+            .define(CONFIG_NAME_COS_OBJECT_PARQUET_SCHEMA, Type.STRING, null, Importance.MEDIUM,
+                    CONFIG_DOCUMENTATION_COS_OBJECT_PARQUET_SCHEMA, CONFIG_GROUP_COS, 8, Width.MEDIUM,
+                    CONFIG_DISPLAY_COS_OBJECT_PARQUET_SCHEMA)
 
         .define(CONFIG_NAME_COS_OBJECT_DEADLINE_SECONDS, Type.INT, -1, Importance.HIGH,
                 CONFIG_DOCUMENTATION_COS_OBJECT_DEADLINE_SECONDS, CONFIG_GROUP_COS, 9, Width.MEDIUM,

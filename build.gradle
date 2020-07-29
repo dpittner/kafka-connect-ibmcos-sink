@@ -14,30 +14,32 @@
  *  limitations under the License.
  */
 plugins {
-  id 'com.github.johnrengelman.shadow' version '4.0.3'
-  id 'java'
-  id 'eclipse'
+    id 'com.github.johnrengelman.shadow' version '4.0.3'
+    id 'java'
+    id 'eclipse'
 }
 
 repositories {
-   mavenCentral()
+    mavenCentral()
 }
 
 dependencies {
-  compile 'com.eclipsesource.minimal-json:minimal-json:0.9.5'
-  compile 'com.ibm.cos:ibm-cos-java-sdk:2.4.5'
-  compile 'org.apache.kafka:connect-api:2.2.1'
-
-  testCompile 'org.mockito:mockito-all:1.10.19'
-  testCompile 'junit:junit:4.12'
-  testCompile 'com.squareup.okhttp3:mockwebserver:3.9.+'
+    compile 'com.eclipsesource.minimal-json:minimal-json:0.9.5'
+    compile 'com.ibm.cos:ibm-cos-java-sdk:2.6.2'
+    compile 'org.apache.kafka:connect-api:2.2.1'
+    compile 'org.apache.parquet:parquet-avro:1.11.0'
+    compile 'tech.allegro.schema.json2avro:converter:0.2.9'
+    compile 'org.apache.hadoop:hadoop-common:2.10.0'
+    testCompile 'org.mockito:mockito-all:1.10.19'
+    testCompile 'junit:junit:4.12'
+    testCompile 'com.squareup.okhttp3:mockwebserver:3.9.+'
 }
 
 eclipse.project {
-  natures 'org.springsource.ide.eclipse.gradle.core.nature'
+    natures 'org.springsource.ide.eclipse.gradle.core.nature'
 }
 
 shadowJar {
-   classifier = 'all'
-   version = '1.0.0'
+    classifier = 'all'
+    version = '1.0.0'
 }
